@@ -1,80 +1,46 @@
+#version 300 es
 precision highp float;
-varying vec2 uv;
-uniform float time;
-uniform sampler2D noiseTexture;
-uniform bool useHash;
 
-const float externalSeed = 345556766456548.5;
-const float internalSeed = 1.0;
+in vec2 uv;              // Input UV coordinates
+uniform float time;      // Time uniform
+uniform sampler2D noiseTexture;  // Texture for noise
+uniform bool useHash;    // Use hash toggle
 
-/*
-use the internal seed to make this a high quality random deterministic hash function. It should be super good quality randomness for externalSeeds that are 1.0, 0.0 up to 23423974298734875.348572616253234234 like all should be good but unique!
+out vec4 fragColor;      // Output color
 
-the current hash function is just a code structure example and works very very very bad
+const uint externalSeed = 429396725u; // Use uint seed for better randomness
 
-*/
-
-// Pseudo-random hash function
-// Seed Shuffler: Scrambles seeds before use
-// Ultra-Chaotic Seed Shuffler
-vec2 shuffleSeeds(float s1, float s2) {
-    s1 = fract(sin(s1 * 12345.6789) * 98765.4321);
-    s2 = fract(cos(s2 * 6789.9876) * 12345.6789);
-    s1 = fract(s1 + s2 * 1.61803398875); // Golden Ratio Scramble
-    s2 = fract(s2 + s1 * 3.14159265359); // Pi Scramble
-    return vec2(s1, s2);
-}
-
-// **INSANE AVALANCHE HASH FUNCTION**
-float hash(float p) {
-    vec2 shuffled = shuffleSeeds(internalSeed, externalSeed);
-    float s1 = shuffled.x;
-    float s2 = shuffled.y;
-
-    // Absolute non-linearity shifts
-    p = fract(p * 0.61803398875 + 0.137) * s1 + s2;
-    
-    // Exponential divergence
-    p = pow(abs(p) + 1e-10, 5.3);  
-
-    // Inject maximum entropy with chaotic trigonometry
-    p = sin(p * s1 * 92837.1234) * cos(p * s2 * 87431.1234) * 1e5;
-
-    // More bit diffusion
-    p = fract(p) * s2 + 1.61803398875;
-    
-    // Logarithmic scrambling
-    p = fract(p + log(abs(p) + 1.0000001) * 76543.2109);
-
-    // Final diffusion with tan() explosion
-    p = tan(p * 45678.9876) * sin(p * 87654.321);
-    
-    return fract(p);
+// Improved hash function using bitwise operations and XOR with externalSeed
+float hash(uint p) {
+    p = p ^ (externalSeed ^ (p >> 16));  // Mix the externalSeed into the input
+    p = p * 0x45d9f3bfu;
+    p = p ^ (p >> 16);
+    p = p * 0x45d9f3bfu;
+    p = p ^ (p >> 16);
+    return float(p & 0x7fffffffu) / float(0x7fffffff); // Normalize to [0.0, 1.0]
 }
 
 // Fade function (smooth interpolation)
 float fade(float t) {
-    return t * t * t * (t * (t * 6.0 - 15.0) + 10.0);
+    return t * t * t * (t * (t * 6.0f - 15.0f) + 10.0f);
 }
 
 // Texture-based gradient lookup
 float gradTexture(float p) {
-
-    const float texture_width = 256.0;
-    float v = texture2D(noiseTexture, vec2(mod(p, texture_width) / texture_width, 0.0)).r;
-    return v > 0.5 ? 1.0 : -1.0;
+    const float texture_width = 256.0f;
+    float v = texture(noiseTexture, vec2(mod(p, texture_width) / texture_width, 0.0f)).r;
+    return v > 0.5f ? 1.0f : -1.0f;
 }
 
 // Gradient function with toggle
 float grad(float p) {
-    return useHash ? (hash(p) > 0.5 ? 1.0 : -1.0) : gradTexture(p);
+    return useHash ? (hash(uint(p)) > 0.5f ? 1.0f : -1.0f) : gradTexture(p);
 }
 
 // 1D Perlin-like noise function
 float noise(float p) {
-
     float p0 = floor(p);
-    float p1 = p0 + 1.0;
+    float p1 = p0 + 1.0f;
     float t = p - p0;
     float fade_t = fade(t);
     float g0 = grad(p0);
@@ -84,29 +50,33 @@ float noise(float p) {
 
 void main() {
 
-    float frequency = 1.0;
-    float speed = 0.2;
-    float amplitude = 1.0;
+    float frequency = 1.5f;
+    float speed = 0.5f;
+    float amplitude = 1.0f;
 
-    float base = 2.0;
-    float exponentFactor = 1.0;
+    float base = 2.0f;
+    float exponentFactor = 1.0f;
 
-    const int amountOctaves = 12;
+    const int amountOctaves = 10;
 
-    float n = 0.0;
+    float n = 0.0f;
 
+    // Sum the noise for each octave
     for(int octaveIndex = 0; octaveIndex < amountOctaves; octaveIndex++) {
-
         float currentFrequency = frequency * pow(base, exponentFactor * float(octaveIndex));
         float currentAmp = amplitude * pow(base, -exponentFactor * float(octaveIndex));
 
-        float currentN = noise((uv.x + speed * time) * currentFrequency) * currentAmp;
+        float timeSmooth = mod(time * 0.1f, 100.0f);
+
+        float currentN = noise((uv.x + speed * timeSmooth) * currentFrequency) * currentAmp;
         n += currentN;
     }
 
-    float y = 2.0 * (uv.y * (1.0)) - 1.0;
+    // Y-coordinate for the comparison
+    float y = 2.0f * (uv.y * (1.0f)) - 1.0f;
 
-    vec3 color = n > y ? vec3(1.0) : vec3(0.0);
+    // Decide the color based on noise and comparison
+    vec3 color = n > y ? vec3(1.0f) : vec3(0.0f);
 
-    gl_FragColor = vec4(color, 1.0);
+    fragColor = vec4(color, 1.0f);  // Set the output color
 }

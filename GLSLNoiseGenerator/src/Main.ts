@@ -1,8 +1,6 @@
 namespace Portfolio {
 
 
-    let seed: string = "324892738473485734975987435345";
-
     async function fetchShader(url: string): Promise<string> {
         const response = await fetch(url);
         return response.text();
@@ -10,7 +8,7 @@ namespace Portfolio {
 
     async function init() {
         const canvas = document.getElementById("glCanvas") as HTMLCanvasElement;
-        const gl = canvas.getContext("webgl");
+        const gl = canvas.getContext("webgl2", { antialias: true });
 
         if (!gl) {
             console.error("WebGL not supported");
@@ -43,26 +41,51 @@ namespace Portfolio {
         const timeUniform = gl.getUniformLocation(program, "time");
         const useHashUniform = gl.getUniformLocation(program, "useHash");
         const noiseTextureUniform = gl.getUniformLocation(program, "noiseTexture");
-        const seedPartsUniform = gl.getUniformLocation(program, "seedParts");
 
         // Generate noise texture
         const noiseTexture = createNoiseTexture(gl);
 
         // Resize canvas dynamically
         function resizeCanvas() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-            gl.viewport(0, 0, canvas.width, canvas.height);
+            const dpr = window.devicePixelRatio || 1;  // Get the device pixel ratio
+            const width = window.innerWidth * dpr;    // Adjust canvas width based on DPR
+            const height = window.innerHeight * dpr;  // Adjust canvas height based on DPR
+
+            canvas.width = width;  // Set internal width
+            canvas.height = height;  // Set internal height
+            canvas.style.width = `${window.innerWidth}px`;  // Set the display width
+            canvas.style.height = `${window.innerHeight}px`;  // Set the display height
+
+            gl.viewport(0, 0, canvas.width, canvas.height);  // Update WebGL viewport
         }
+
         window.addEventListener("resize", resizeCanvas);
         resizeCanvas();
+
+        // Create a framebuffer and a renderbuffer with MSAA
+        const framebuffer = gl.createFramebuffer();
+        gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
+
+        // Create a renderbuffer for color attachment with multi-sampling
+        const renderbuffer = gl.createRenderbuffer();
+        gl.bindRenderbuffer(gl.RENDERBUFFER, renderbuffer);
+        gl.renderbufferStorageMultisample(gl.RENDERBUFFER, 4, gl.RGBA8, canvas.width, canvas.height);  // 4x MSAA
+        gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.RENDERBUFFER, renderbuffer);
+
+        // Check if framebuffer is complete
+        if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) {
+            console.error("Framebuffer is not complete!");
+            return;
+        }
+
+        // Unbind framebuffer
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
         // Render loop
         function render(time: number) {
 
             gl.uniform1f(timeUniform, time * 0.001);
-            gl.uniform1i(useHashUniform, 0); // Toggle this (0 = use texture2D, 1 = use hash)
-            gl.uniform1iv(seedPartsUniform, splitSeed(seed));
+            gl.uniform1i(useHashUniform, 1); // Toggle this (0 = use texture2D, 1 = use hash)
             gl.activeTexture(gl.TEXTURE0);
             gl.bindTexture(gl.TEXTURE_2D, noiseTexture);
             gl.uniform1i(noiseTextureUniform, 0);
@@ -72,17 +95,25 @@ namespace Portfolio {
         requestAnimationFrame(render);
     }
 
-    function splitSeed(seed: string): Uint32Array {
-        const parts = new Uint32Array(4);
-        
-        // Convert seed string into a large number and split it safely
-        let chunkSize = Math.ceil(seed.length / 4); // Split seed into 4 parts
-        for (let i = 0; i < 4; i++) {
-            let chunk = seed.slice(i * chunkSize, (i + 1) * chunkSize);
-            parts[i] = parseInt(chunk, 10) >>> 0; // Convert safely to uint
+    // Function to split the string into an array of uints
+    function splitSeed(seed: string): number[] {
+        const seedArray: number[] = [];
+
+        // Convert string to uints (using ASCII codes of characters)
+        for (let i = 0; i < seed.length; i++) {
+            // Get the ASCII value of each character
+            const charCode = seed.charCodeAt(i);
+
+            // Break the character code into smaller parts (since uint is 32-bits)
+            seedArray.push(charCode);
         }
-    
-        return parts;
+
+        // Ensure we have a 32-bit unsigned integer array for GLSL, pad with 0 if necessary
+        while (seedArray.length < 4) {
+            seedArray.push(0); // Pad with zeros if we need more values
+        }
+
+        return seedArray;
     }
 
     // Generate a random grayscale noise texture
