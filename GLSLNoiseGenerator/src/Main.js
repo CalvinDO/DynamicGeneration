@@ -9,6 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 var Portfolio;
 (function (Portfolio) {
+    let seed = "324892738473485734975987435345";
     function fetchShader(url) {
         return __awaiter(this, void 0, void 0, function* () {
             const response = yield fetch(url);
@@ -46,6 +47,7 @@ var Portfolio;
             const timeUniform = gl.getUniformLocation(program, "time");
             const useHashUniform = gl.getUniformLocation(program, "useHash");
             const noiseTextureUniform = gl.getUniformLocation(program, "noiseTexture");
+            const seedPartsUniform = gl.getUniformLocation(program, "seedParts");
             // Generate noise texture
             const noiseTexture = createNoiseTexture(gl);
             // Resize canvas dynamically
@@ -60,6 +62,7 @@ var Portfolio;
             function render(time) {
                 gl.uniform1f(timeUniform, time * 0.001);
                 gl.uniform1i(useHashUniform, 0); // Toggle this (0 = use texture2D, 1 = use hash)
+                gl.uniform1iv(seedPartsUniform, splitSeed(seed));
                 gl.activeTexture(gl.TEXTURE0);
                 gl.bindTexture(gl.TEXTURE_2D, noiseTexture);
                 gl.uniform1i(noiseTextureUniform, 0);
@@ -68,6 +71,16 @@ var Portfolio;
             }
             requestAnimationFrame(render);
         });
+    }
+    function splitSeed(seed) {
+        const parts = new Uint32Array(4);
+        // Convert seed string into a large number and split it safely
+        let chunkSize = Math.ceil(seed.length / 4); // Split seed into 4 parts
+        for (let i = 0; i < 4; i++) {
+            let chunk = seed.slice(i * chunkSize, (i + 1) * chunkSize);
+            parts[i] = parseInt(chunk, 10) >>> 0; // Convert safely to uint
+        }
+        return parts;
     }
     // Generate a random grayscale noise texture
     function createNoiseTexture(gl) {
