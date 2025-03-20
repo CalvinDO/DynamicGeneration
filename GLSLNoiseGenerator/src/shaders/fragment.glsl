@@ -41,31 +41,27 @@ float noise(float p) {
 
 void main() {
 
-    float frequency = 0.5;
-    float speed = 0.2;
+    float frequency = 0.8;
+    float speed = 0.3;
     float amplitude = 1.0;
 
-    int amountOctaves = 8;
+    float base = 2.0;
+    float exponentFactor = 1.0;
 
-    //float n = noise(uv.x * frequency + time) * amplitude;
-    /*
+    const int amountOctaves = 12;
+
+
     float n = 0.0;
 
     for(int octaveIndex = 0; octaveIndex < amountOctaves; octaveIndex++) {
-        float currentN = noise((uv.x * frequency + (time * speed)) * (1.5)) * 1.0 * amplitude;
+
+        float currentFrequency = frequency * pow(base, exponentFactor * float(octaveIndex));
+        float currentAmp = amplitude * pow(base, - exponentFactor * float(octaveIndex));
+
+        float currentN = noise((uv.x + speed * time) * currentFrequency) * currentAmp;
         n += currentN;
     }
-    */
-
-    float n = noise(((uv.x + speed * time) * frequency) * (1.5)) * 1.0 * amplitude +
-        noise(((uv.x + speed * time) * frequency) * (3.0)) * 0.5 * amplitude +
-        noise(((uv.x + speed * time) * frequency) * (6.0)) * 0.25 * amplitude +
-        noise(((uv.x + speed * time) * frequency) * (14.0)) * 0.125 * amplitude +
-        noise(((uv.x + speed * time) * frequency) * (28.0)) * 0.0625 * amplitude +
-        noise(((uv.x + speed * time) * frequency) * (56.0)) * 0.03125 * amplitude +
-        noise(((uv.x + speed * time) * frequency) * (56.0 * 2.0)) * 0.015625 * amplitude +
-        noise(((uv.x + speed * time) * frequency) * (56.0 * 4.0)) * 0.0078125 * amplitude;
-
+    
     float y = 2.0 * (uv.y * (1.0)) - 1.0;
 
     vec3 color = n > y ? vec3(1.0) : vec3(0.0);
