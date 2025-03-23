@@ -3,12 +3,12 @@ precision highp float;
 
 in vec2 uv;              // Input UV coordinates
 uniform float time;      // Time uniform
-uniform sampler2D noiseTexture;  // Texture for noise
-uniform bool useHash;    // Use hash toggle
+uniform float pixelRatio;
 
 out vec4 fragColor;      // Output color
 
-const uint externalSeed = 483543u; // Use uint seed for better randomness
+const uint externalSeed = 194823u; // Use uint seed for better randomness
+const float LARGE_PRIME = 16807.234233123f;
 
 // Rotate function for better bit mixing
 uint rotateLeft(uint v, uint shift) {
@@ -35,6 +35,7 @@ float hash(vec2 p) {
     h2 = hashStep(uint(p.y), h2);
 
     uint finalHash = h1 ^ rotateLeft(h2, 13u);
+
     return float(finalHash & 0x7fffffffu) / float(0x7fffffff);
 }
 
@@ -80,27 +81,11 @@ float gradTexture(float p) {
 */
 
 // Gradient function for generating random gradients in the range (-1, 1) in 2D
-ivec2 grad(vec2 p) {
-    float h = hash(p);  // Get a random float between 0 and 1 based on p
+vec2 grad(vec2 p) {
 
-    // Use the hash value to pick one of the 8 possible gradient directions
-    if(h < 0.125f) {
-        return ivec2(-1, -1);
-    } else if(h < 0.25f) {
-        return ivec2(-1, 0);
-    } else if(h < 0.375f) {
-        return ivec2(-1, 1);
-    } else if(h < 0.5f) {
-        return ivec2(0, -1);
-    } else if(h < 0.625f) {
-        return ivec2(0, 0);
-    } else if(h < 0.75f) {
-        return ivec2(0, 1);
-    } else if(h < 0.875f) {
-        return ivec2(1, -1);
-    } else {
-        return ivec2(1, 0);
-    }
+    float hash = hash(p);
+    hash = hash * LARGE_PRIME;
+    return (vec2(cos(hash), sin(hash)));
 }
 
 // 1D Perlin-like noise function
@@ -122,10 +107,10 @@ float noise(vec2 p) {
     vec2 p3 = p0 + vec2(1.0f, 1.0f);
 
     /* Look up gradients at lattice points. */
-    vec2 g0 = vec2(grad(p0));
-    vec2 g1 = vec2(grad(p1));
-    vec2 g2 = vec2(grad(p2));
-    vec2 g3 = vec2(grad(p3));
+    vec2 g0 = grad(p0);
+    vec2 g1 = grad(p1);
+    vec2 g2 = grad(p2);
+    vec2 g3 = grad(p3);
 
     float t0 = p.x - p0.x;
     float fade_t0 = fade(t0); /* Used for interpolation in horizontal direction */
@@ -149,15 +134,16 @@ vec3 hsl2rgb(in vec3 c) {
 
 void main() {
 
-    float frequency = 5.0f;
-    float speed = 1.0f;
+    float frequency = 3.0f;
+    float speed = 0.1f;
     float amplitude = 1.0f;
 
     float base = 2.0f;
-    float exponentFactor = 1.0f;
-    const int amountOctaves = 16;
+    float exponentFactor = 0.314f;
+    const int amountOctaves = 25;
 
-    float startOffset = 253.0f;
+    //vec2 startOffset = vec2(70.0f, 70.0f);
+    float startOffset = 0.0f;
 
     float n = 0.0f;
 
@@ -166,12 +152,12 @@ void main() {
         float currentFrequency = frequency * pow(base, exponentFactor * float(octaveIndex));
         float currentAmp = amplitude * pow(base, -exponentFactor * float(octaveIndex));
 
-        float timeSmooth = mod(time * 0.1f, 100.0f);
+        //float timeSmooth = mod(time * 0.1f, 100.0f);
 
-        float xIn = (uv.x + startOffset + speed * timeSmooth) * currentFrequency;
-        float yIn = (uv.y + startOffset + speed * timeSmooth) * currentFrequency;
+        float xIn = (uv.x + startOffset + speed * time) * currentFrequency;
+        float yIn = (uv.y + startOffset + speed * time) * currentFrequency;
 
-        float currentN = noise(vec2(xIn, yIn)) * currentAmp;
+        float currentN = noise(vec2(xIn, yIn * pixelRatio))  * currentAmp;
         n += currentN;
     }
 
@@ -180,6 +166,6 @@ void main() {
 
     // Decide the color based on noise and comparison
     //vec3 color = n > y ? vec3(1.0f) : vec3(0.0f);
-    vec3 color = hsl2rgb(vec3(n, 0.618f, 0.5f));
+    vec3 color = hsl2rgb(vec3(n, 1.0f, 0.5f));
     fragColor = vec4(color, 1.0f);  // Set the output color
 }

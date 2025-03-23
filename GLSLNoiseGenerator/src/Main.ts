@@ -1,5 +1,6 @@
 namespace Portfolio {
 
+    let pixelRatio: number = 16 / 9;
 
     async function fetchShader(url: string): Promise<string> {
         const response = await fetch(url);
@@ -41,6 +42,7 @@ namespace Portfolio {
         const timeUniform = gl.getUniformLocation(program, "time");
         const useHashUniform = gl.getUniformLocation(program, "useHash");
         const noiseTextureUniform = gl.getUniformLocation(program, "noiseTexture");
+        const pixelRatioUniform = gl.getUniformLocation(program, "pixelRatio");
 
         // Generate noise texture
         const noiseTexture = createNoiseTexture(gl);
@@ -55,6 +57,8 @@ namespace Portfolio {
             canvas.height = height;  // Set internal height
             canvas.style.width = `${window.innerWidth}px`;  // Set the display width
             canvas.style.height = `${window.innerHeight}px`;  // Set the display height
+
+            pixelRatio = canvas.height / canvas.width;
 
             gl.viewport(0, 0, canvas.width, canvas.height);  // Update WebGL viewport
         }
@@ -85,6 +89,7 @@ namespace Portfolio {
         function render(time: number) {
 
             gl.uniform1f(timeUniform, time * 0.001);
+            gl.uniform1f(pixelRatioUniform, pixelRatio)
             gl.uniform1i(useHashUniform, 1); // Toggle this (0 = use texture2D, 1 = use hash)
             gl.activeTexture(gl.TEXTURE0);
             gl.bindTexture(gl.TEXTURE_2D, noiseTexture);
