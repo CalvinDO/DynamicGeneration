@@ -7,7 +7,7 @@ uniform float pixelRatio;
 
 out vec4 fragColor;      // Output color
 
-const uint externalSeed = 194823u; // Use uint seed for better randomness
+const uint externalSeed = 20072001u; // Use uint seed for better randomness
 const float LARGE_PRIME = 16807.234233123f;
 
 // Rotate function for better bit mixing
@@ -90,15 +90,6 @@ vec2 grad(vec2 p) {
 
 // 1D Perlin-like noise function
 float noise(vec2 p) {
-    /*
-    float p0 = floor(p.x);
-    float p1 = p0 + 1.0f;
-    float t = p.x - p0;
-    float fade_t = fade(t);
-    float g0 = grad(p0);
-    float g1 = grad(p1);
-    return mix(g0 * (p.x - p0), g1 * (p.x - p1), fade_t);
-    */
 
     /* Calculate lattice points. */
     vec2 p0 = floor(p);
@@ -134,16 +125,16 @@ vec3 hsl2rgb(in vec3 c) {
 
 void main() {
 
-    float frequency = 3.0f;
-    float speed = 0.1f;
+    float frequency =3.0f;
+    float speed = 0.0f;
     float amplitude = 1.0f;
 
     float base = 2.0f;
-    float exponentFactor = 0.314f;
-    const int amountOctaves = 25;
+    float exponentFactor = 0.18;
+    const int amountOctaves = 20;
 
     //vec2 startOffset = vec2(70.0f, 70.0f);
-    float startOffset = 0.0f;
+    float startOffset = 10.0f;
 
     float n = 0.0f;
 
@@ -166,6 +157,6 @@ void main() {
 
     // Decide the color based on noise and comparison
     //vec3 color = n > y ? vec3(1.0f) : vec3(0.0f);
-    vec3 color = hsl2rgb(vec3(n, 1.0f, 0.5f));
+    vec3 color = hsl2rgb(vec3(n, 0.6f, 0.5f));
     fragColor = vec4(color, 1.0f);  // Set the output color
 }
