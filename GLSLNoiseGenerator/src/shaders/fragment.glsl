@@ -8,7 +8,7 @@ uniform float pixelRatio;
 out vec4 fragColor;      // Output color
 
 const uint externalSeed = 20072001u; // Use uint seed for better randomness
-const float LARGE_PRIME = 16807.234233123f;
+const float LARGE_PRIME = 16807.234233123284755621f;
 
 // Rotate function for better bit mixing
 uint rotateLeft(uint v, uint shift) {
@@ -118,6 +118,8 @@ float noise(vec3 p) {
     vec3 g6 = grad(p6);
     vec3 g7 = grad(p7);
 
+    //fragColor = vec4(g0, 1.0f);  // Set the output color
+
     float t0 = p.x - p0.x;
     float fade_t0 = fade(t0); /* Used for interpolation in horizontal direction */
 
@@ -139,7 +141,7 @@ float noise(vec3 p) {
     float back = (1.0f - fade_t1) * p4p5 + fade_t1 * p6p7;
 
     /* Calculate final result */
-    return (1.0f - fade_t2) * back + fade_t2 * front;
+    return (1.0f - fade_t2) * front + fade_t2 * back;
 }
 
 vec3 hsl2rgb(in vec3 c) {
@@ -150,16 +152,16 @@ vec3 hsl2rgb(in vec3 c) {
 
 void main() {
 
-    float frequency = 3.0f;
-    float speed = 0.0f;
-    float depthSpeed = 0.5f;
+    float frequency = 25.0f;
+    float speed = 0.03f;
+    float depthSpeed = 0.25f;
     float amplitude = 1.0f;
-    float base = 2.0f;
-    float exponentFactor = 1.0f;
-    const int amountOctaves = 7;
+    float base = 2.7f;
+    float exponentFactor = 0.02f;
+    const int amountOctaves = 6;
 
     //vec2 startOffset = vec2(70.0f, 70.0f);
-    float startOffset = 1000.0f;
+    float startOffset = 231.0f;
 
     float n = 0.0f;
 
