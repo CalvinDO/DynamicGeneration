@@ -161,7 +161,7 @@ void main() {
     const int amountOctaves = 6;
 
     //vec2 startOffset = vec2(70.0f, 70.0f);
-    float startOffset = 231.0f;
+    float startOffset = 763.0f;
 
     float n = 0.0f;
 
