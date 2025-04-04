@@ -2,6 +2,13 @@ namespace Portfolio {
 
     let aspectRatio: number = 16 / 9;
 
+    let cameraPos: number[] = [0.0, 0.0, 1.0];
+    let cameraRotation: number[] = [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0];
+    let fov: number = getRadians(100.0);
+
+    function getRadians(_degrees: number): number {
+        return _degrees / 360 * 2 * Math.PI;
+    }
     async function fetchShader(url: string): Promise<string> {
         const response = await fetch(url);
         return response.text();
@@ -43,6 +50,10 @@ namespace Portfolio {
         const useHashUniform = gl.getUniformLocation(program, "useHash");
         const noiseTextureUniform = gl.getUniformLocation(program, "noiseTexture");
         const pixelRatioUniform = gl.getUniformLocation(program, "aspectRatio");
+        const cameraPosUniform = gl.getUniformLocation(program, "cameraPos");
+        const cameraRotationUniform = gl.getUniformLocation(program, "cameraRotation");
+
+        const fovUniform = gl.getUniformLocation(program, "fov");
 
         // Generate noise texture
         const noiseTexture = createNoiseTexture(gl);
@@ -88,6 +99,9 @@ namespace Portfolio {
         // Render loop
         function render(time: number) {
 
+            gl.uniform3fv(cameraPosUniform, cameraPos);
+            gl.uniformMatrix3fv(cameraRotationUniform, false, cameraRotation);
+            gl.uniform1f(fovUniform, fov);
             gl.uniform1f(timeUniform, time * 0.001);
             gl.uniform1f(pixelRatioUniform, aspectRatio)
             gl.uniform1i(useHashUniform, 1); // Toggle this (0 = use texture2D, 1 = use hash)

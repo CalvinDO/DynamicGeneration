@@ -10,6 +10,12 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 var Portfolio;
 (function (Portfolio) {
     let aspectRatio = 16 / 9;
+    let cameraPos = [0.0, 0.0, 1.0];
+    let cameraRotation = [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0];
+    let fov = getRadians(100.0);
+    function getRadians(_degrees) {
+        return _degrees / 360 * 2 * Math.PI;
+    }
     function fetchShader(url) {
         return __awaiter(this, void 0, void 0, function* () {
             const response = yield fetch(url);
@@ -48,6 +54,9 @@ var Portfolio;
             const useHashUniform = gl.getUniformLocation(program, "useHash");
             const noiseTextureUniform = gl.getUniformLocation(program, "noiseTexture");
             const pixelRatioUniform = gl.getUniformLocation(program, "aspectRatio");
+            const cameraPosUniform = gl.getUniformLocation(program, "cameraPos");
+            const cameraRotationUniform = gl.getUniformLocation(program, "cameraRotation");
+            const fovUniform = gl.getUniformLocation(program, "fov");
             // Generate noise texture
             const noiseTexture = createNoiseTexture(gl);
             // Resize canvas dynamically
@@ -81,6 +90,9 @@ var Portfolio;
             gl.bindFramebuffer(gl.FRAMEBUFFER, null);
             // Render loop
             function render(time) {
+                gl.uniform3fv(cameraPosUniform, cameraPos);
+                gl.uniformMatrix3fv(cameraRotationUniform, false, cameraRotation);
+                gl.uniform1f(fovUniform, fov);
                 gl.uniform1f(timeUniform, time * 0.001);
                 gl.uniform1f(pixelRatioUniform, aspectRatio);
                 gl.uniform1i(useHashUniform, 1); // Toggle this (0 = use texture2D, 1 = use hash)

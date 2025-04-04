@@ -5,10 +5,30 @@ in vec2 uv;              // Input UV coordinates
 uniform float time;      // Time uniform
 uniform float aspectRatio;
 
+uniform vec3 cameraPos;
+uniform mat3 cameraRotation;
+uniform float fov;
+
 out vec4 fragColor;      // Output color
 
 const uint externalSeed = 20072001u; // Use uint seed for better randomness
 const float LARGE_PRIME = 16807.234233123284755621f;
+
+const float frequency = 10.0f;
+const float speed = 0.03f;
+const float depthSpeed = 0.0f;
+const float amplitude = 1.0f;
+// const float base = 2.7f;
+//const float exponentFactor = 0.02f;
+const float base = 2.0f;
+const float exponentFactor = 1.0f;
+const int amountOctaves = 3;
+//vec2 startOffset = vec2(70.0f, 70.0f);
+const float startOffset = 763.0f;
+
+const float stepSize = 0.1f;
+const float maxDist = 1.0f;
+const float threshold = 0.1f;
 
 // Rotate function for better bit mixing
 uint rotateLeft(uint v, uint shift) {
@@ -150,18 +170,7 @@ vec3 hsl2rgb(in vec3 c) {
     return c.z + c.y * (rgb - 0.5f) * (1.0f - abs(2.0f * c.z - 1.0f));
 }
 
-void main() {
-
-    float frequency = 25.0f;
-    float speed = 0.03f;
-    float depthSpeed = 0.25f;
-    float amplitude = 1.0f;
-    float base = 2.7f;
-    float exponentFactor = 0.02f;
-    const int amountOctaves = 6;
-
-    //vec2 startOffset = vec2(70.0f, 70.0f);
-    float startOffset = 763.0f;
+float getBrownianNoise(vec3 pos) {
 
     float n = 0.0f;
 
@@ -172,11 +181,34 @@ void main() {
 
         //float timeSmooth = mod(time * 0.1f, 100.0f);
 
-        float xIn = (uv.x + startOffset + speed * time) * currentFrequency;
-        float yIn = (uv.y + startOffset + speed * time) * currentFrequency;
+        float xIn = (pos.x + startOffset + speed * time) * currentFrequency;
+        float yIn = (pos.y + startOffset + speed * time) * currentFrequency;
+        float zIn = (pos.z + startOffset + depthSpeed * time) * currentFrequency;
 
-        float currentN = noise(vec3(xIn, yIn * aspectRatio, depthSpeed * time)) * currentAmp;
+        float currentN = noise(vec3(xIn, yIn, zIn)) * currentAmp;
         n += currentN;
+    }
+
+    return n;
+}
+
+void main() {
+
+    float fovFactor = tan(fov * 0.5f);
+    vec3 rayDir = normalize(cameraRotation * normalize(vec3((uv.x * 2.0f - 1.0f) * fovFactor, (uv.y * 2.0f - 1.0f) * fovFactor * aspectRatio, 1.0f)));
+
+    vec3 rayPos = cameraPos;
+
+    float totalDensity = 0.0f;
+
+    for(float i = 0.0f; i < maxDist; i += stepSize) {
+
+        float n = getBrownianNoise(rayPos * 0.5f);
+        if(n > threshold) {
+            totalDensity += (n - threshold) * 0.1f;
+        }
+
+        rayPos += rayDir * stepSize;
     }
 
     // Y-coordinate for the comparison
@@ -184,6 +216,8 @@ void main() {
 
     // Decide the color based on noise and comparison
     //vec3 color = n > y ? vec3(1.0f) : vec3(0.0f);
-    vec3 color = hsl2rgb(vec3(n, 0.6f, 0.5f));
+    //vec3 color = hsl2rgb(vec3(n, 0.6f, 0.5f));
+    vec3 color = hsl2rgb(vec3(totalDensity, 0.0f, totalDensity * 5.0));
+
     fragColor = vec4(color, 1.0f);  // Set the output color
 }
