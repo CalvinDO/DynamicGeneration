@@ -10,7 +10,7 @@ uniform vec2 zoomPos;
 const uint maxIterations = 1000u;
 const float maxValue = 4000000000000000000000000000000000000000000000.0f;
 
-const bool isJulia = false;
+const bool isJulia = true;
 
 out vec4 fragColor;      // Output color
 
