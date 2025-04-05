@@ -12,7 +12,7 @@ var Portfolio;
     let aspectRatio = 16 / 9;
     let cameraPos = [0.0, 0.0, 1.0];
     let cameraRotation = [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0];
-    let fov = getRadians(100.0);
+    let fov = getRadians(80.0);
     function getRadians(_degrees) {
         return _degrees / 360 * 2 * Math.PI;
     }

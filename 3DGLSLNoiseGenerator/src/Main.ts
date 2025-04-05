@@ -4,7 +4,7 @@ namespace Portfolio {
 
     let cameraPos: number[] = [0.0, 0.0, 1.0];
     let cameraRotation: number[] = [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0];
-    let fov: number = getRadians(100.0);
+    let fov: number = getRadians(80.0);
 
     function getRadians(_degrees: number): number {
         return _degrees / 360 * 2 * Math.PI;
