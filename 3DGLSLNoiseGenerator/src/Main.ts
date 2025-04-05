@@ -2,9 +2,10 @@ namespace Portfolio {
 
     let aspectRatio: number = 16 / 9;
 
-    let cameraPos: number[] = [0.0, 0.0, 1.0];
+    let cameraPos: number[] = [234.0, 324.0, 5.0];
     let cameraRotation: number[] = [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0];
     let fov: number = getRadians(80.0);
+    let nearClipPlane: number = 0.00;
 
     function getRadians(_degrees: number): number {
         return _degrees / 360 * 2 * Math.PI;
@@ -52,7 +53,7 @@ namespace Portfolio {
         const pixelRatioUniform = gl.getUniformLocation(program, "aspectRatio");
         const cameraPosUniform = gl.getUniformLocation(program, "cameraPos");
         const cameraRotationUniform = gl.getUniformLocation(program, "cameraRotation");
-
+        const nearClipPlaneUniform = gl.getUniformLocation(program, "nearClipPlane");
         const fovUniform = gl.getUniformLocation(program, "fov");
 
         // Generate noise texture
@@ -99,6 +100,7 @@ namespace Portfolio {
         // Render loop
         function render(time: number) {
 
+            gl.uniform1f(nearClipPlaneUniform, nearClipPlane);
             gl.uniform3fv(cameraPosUniform, cameraPos);
             gl.uniformMatrix3fv(cameraRotationUniform, false, cameraRotation);
             gl.uniform1f(fovUniform, fov);

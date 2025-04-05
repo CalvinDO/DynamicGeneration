@@ -1,27 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="style.css" />
     <title>Mandelbrot Fractal</title>
-    <style>
-        body,
-        html {
-            margin: 0;
-            overflow: hidden;
-        }
+  </head>
 
-        canvas {
-            display: block;
-        }
-    </style>
-</head>
-
-<body>
-    <canvas id="glCanvas"></canvas>
+  <body>
+    <div class="canvas-wrapper">
+      <input
+        type="number"
+        id="iterations-input"
+        min="0"
+        max=""
+      />
+      <canvas id="glCanvas"></canvas>
+    </div>
     <script src="./src/Vector.js"></script>
     <script type="module" src="./src/Main.js"></script>
-</body>
-
+  </body>
 </html>

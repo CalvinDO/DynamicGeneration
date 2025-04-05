@@ -1,0 +1,26 @@
+body, html {
+    margin: 0;
+    overflow: hidden;
+}
+
+.canvas-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+#glCanvas {
+    display: block;
+}
+
+#iterations-input {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    margin: 0;
+    padding: 5px 10px;
+    background-color: rgba(0, 0, 0, 0.6);
+    color: white;
+    font-family: sans-serif;
+    border-radius: 4px;
+    z-index: 10;
+}

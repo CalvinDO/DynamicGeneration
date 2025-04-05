@@ -14,6 +14,8 @@ var Portfolio;
     let zoomPos = new Vector2D(0.02, 0.2499);
     let linearZoomDepth = 0;
     let exponentialZoomDepth = Math.pow(1.02, linearZoomDepth);
+    let iterations = 100;
+    let iterationsInput;
     function fetchShader(url) {
         return __awaiter(this, void 0, void 0, function* () {
             const response = yield fetch(url);
@@ -24,6 +26,8 @@ var Portfolio;
         return __awaiter(this, void 0, void 0, function* () {
             const canvas = document.getElementById("glCanvas");
             const gl = canvas.getContext("webgl2", { antialias: true });
+            iterationsInput = document.querySelector("#iterations-input");
+            iterationsInput.addEventListener("input", onChangeIterationsInput);
             if (!gl) {
                 console.error("WebGL not supported");
                 return;
@@ -54,6 +58,10 @@ var Portfolio;
             const useHashUniform = gl.getUniformLocation(program, "useHash");
             const noiseTextureUniform = gl.getUniformLocation(program, "noiseTexture");
             const pixelRatioUniform = gl.getUniformLocation(program, "pixelRatio");
+            const iterationsUniform = gl.getUniformLocation(program, "maxIterations");
+            const zoomDepthHiLoUniform = gl.getUniformLocation(program, "zoomDepthHiLo");
+            const zoomPosHiUniform = gl.getUniformLocation(program, "zoomPosHi");
+            const zoomPosLoUniform = gl.getUniformLocation(program, "zoomPosLo");
             // Generate noise texture
             const noiseTexture = createNoiseTexture(gl);
             // Resize canvas dynamically
@@ -89,8 +97,13 @@ var Portfolio;
             function render(time) {
                 gl.uniform1f(timeUniform, time * 0.001);
                 gl.uniform1f(pixelRatioUniform, pixelRatio);
-                gl.uniform1f(zoomDepthUniform, exponentialZoomDepth);
-                gl.uniform2fv(zoomPosUniform, [zoomPos.x, zoomPos.y]);
+                const [zoomDepthHi, zoomDepthLo] = splitDouble(exponentialZoomDepth);
+                const [zoomPosXHi, zoomPosXLo] = splitDouble(zoomPos.x);
+                const [zoomPosYHi, zoomPosYLo] = splitDouble(zoomPos.y);
+                gl.uniform2f(zoomDepthHiLoUniform, zoomDepthHi, zoomDepthLo);
+                gl.uniform2f(zoomPosHiUniform, zoomPosXHi, zoomPosYHi);
+                gl.uniform2f(zoomPosLoUniform, zoomPosXLo, zoomPosYLo);
+                gl.uniform1ui(iterationsUniform, iterations);
                 gl.uniform1i(useHashUniform, 1); // Toggle this (0 = use texture2D, 1 = use hash)
                 gl.activeTexture(gl.TEXTURE0);
                 gl.bindTexture(gl.TEXTURE_2D, noiseTexture);
@@ -161,18 +174,19 @@ var Portfolio;
         return program;
     }
     function onMouseDown(_event) {
+        console.warn("not implemented warning");
     }
     function onWheel(_event) {
         _event.preventDefault();
         let client = new Vector2D(_event.clientX, _event.clientY);
         let delta = new Vector2D(_event.deltaX, _event.deltaY);
-        let isZooming = !Number.isInteger(delta.y);
-        if (isZooming) {
-            linearZoomDepth -= delta.y;
-            if (linearZoomDepth < -100) {
-                linearZoomDepth = -100;
-            }
-            exponentialZoomDepth = Math.pow(1.02, -linearZoomDepth);
+        let isZoomingTouchpad = !Number.isInteger(delta.y);
+        let isZoomingMouse = _event.ctrlKey;
+        if (isZoomingTouchpad) {
+            zoom(delta.y);
+        }
+        else if (isZoomingMouse) {
+            zoom(delta.y / 10);
         }
         else {
             let scaledDelta = delta;
@@ -180,7 +194,22 @@ var Portfolio;
             scaledDelta.y = -scaledDelta.y;
             zoomPos.add(scaledDelta);
         }
-        console.log(linearZoomDepth);
+    }
+    function zoom(_amount) {
+        linearZoomDepth -= _amount;
+        if (linearZoomDepth < -100) {
+            linearZoomDepth = -100;
+        }
+        exponentialZoomDepth = Math.pow(1.02, -linearZoomDepth);
+    }
+    function onChangeIterationsInput(ev) {
+        iterations = parseInt(this.value);
+    }
+    // === JavaScript: Upgrade zoom depth and pos into Float64 ===
+    function splitDouble(d) {
+        const hi = Math.fround(d);
+        const lo = d - hi;
+        return [hi, lo];
     }
     window.addEventListener("mousedown", onMouseDown);
     window.addEventListener("wheel", onWheel, { passive: false });
