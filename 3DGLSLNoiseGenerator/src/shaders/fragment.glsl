@@ -5,7 +5,7 @@ in vec2 uv;              // Input UV coordinates
 uniform float time;      // Time uniform
 uniform float aspectRatio;
 
-uniform vec3 cameraPos;
+uniform vec3 startCameraPos;
 uniform mat3 cameraRotation;
 uniform float fov;
 uniform float nearClipPlane;
@@ -16,8 +16,9 @@ const uint externalSeed = 20072001u; // Use uint seed for better randomness
 const float LARGE_PRIME = 16807.234233123284755621f;
 
 const float frequency = 10.0f;
-const vec3 speed = vec3(0.00f, 0.0f, 0.2f);
-const float amplitude = 0.3f;
+const vec3 speed = vec3(0.00f, 0.0f, 0.3f);
+
+const float amplitude = 1.0f;
 // const float base = 2.7f;
 //const float exponentFactor = 0.02f;
 const float base = 2.0f;
@@ -26,7 +27,7 @@ const int amountOctaves = 4;
 
 const float stepSize = 0.03f;
 const float maxDist = 0.75f;
-const float threshold = 0.00001f;
+const float threshold = 0.01f;
 
 const float absorptionCoefficient = 0.5f; // Absorption coefficient for Beer's law
 
@@ -197,15 +198,17 @@ void main() {
     float fovFactor = tan(fov * 0.5f);
     vec3 rayDir = normalize(cameraRotation * normalize(vec3((uv.x * 2.0f - 1.0f) * fovFactor, (uv.y * 2.0f - 1.0f) * fovFactor * aspectRatio, 1.0f)));
 
-    vec3 rayPos = cameraPos + speed * time;
+    vec3 cameraPos = startCameraPos + speed * time;
+    vec3 rayPos = cameraPos;
 
     float totalDensity = 0.0f;
+
     float accumulatedDensity = 0.0f;
 
-    for(float i = 0.0; i < maxDist; i += stepSize) {
+    for(float i = 0.0f; i < maxDist; i += stepSize) {
 
         // Compute distance along the ray from the camera
-        float rayDepth = rayPos.z - cameraPos.z;
+        float rayDepth = length(rayPos - cameraPos);
 
         // Ensure we're not too close to the camera (near clip plane)
         if(rayDepth > nearClipPlane) {
@@ -216,23 +219,16 @@ void main() {
                 accumulatedDensity += n * stepSize;
                 // Apply Beer's law attenuation
                 float attenuation = exp(-absorptionCoefficient * accumulatedDensity);
-                totalDensity += n * attenuation * 0.02f;
+                totalDensity += n * attenuation * 0.01f;
             }
-
-            rayPos += rayDir * stepSize;
         }
+
+        rayPos += rayDir * stepSize;
     }
 
-    // Y-coordinate for the comparison
-    //float y = 2.0f * (uv.y * (1.0f)) - 1.0f;
-
-    // Decide the color based on noise and comparison
-    //vec3 color = n > y ? vec3(1.0f) : vec3(0.0f);
-    //vec3 color = hsl2rgb(vec3(n, 0.6f, 0.5f));
     vec3 color;
 
-    //color = hsl2rgb(vec3(210.0f / 360.0f, 0.8f, totalDensity * 20.0f));
-    color = hsl2rgb(vec3(210.0f / 360.0f, totalDensity * 20.0f, mix(1.0f, 0.5f, clamp(totalDensity * 20.0f, 0.0f, 1.0f))));
+    color = hsl2rgb(vec3(210.0f / 360.0f, totalDensity * 20.0f, mix(1.0f, 0.7f, clamp(totalDensity * 20.0f, 0.0f, 1.0f))));
 
-    fragColor = vec4(color, 1.0f);  // Set the output color
+    fragColor = vec4(color, 1.0f);
 }

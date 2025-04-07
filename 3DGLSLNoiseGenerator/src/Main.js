@@ -13,7 +13,7 @@ var Portfolio;
     let cameraPos = [234.0, 324.0, 5.0];
     let cameraRotation = [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0];
     let fov = getRadians(80.0);
-    let nearClipPlane = 0.00;
+    let nearClipPlane = 0.07;
     function getRadians(_degrees) {
         return _degrees / 360 * 2 * Math.PI;
     }
@@ -55,7 +55,7 @@ var Portfolio;
             const useHashUniform = gl.getUniformLocation(program, "useHash");
             const noiseTextureUniform = gl.getUniformLocation(program, "noiseTexture");
             const pixelRatioUniform = gl.getUniformLocation(program, "aspectRatio");
-            const cameraPosUniform = gl.getUniformLocation(program, "cameraPos");
+            const cameraPosUniform = gl.getUniformLocation(program, "startCameraPos");
             const cameraRotationUniform = gl.getUniformLocation(program, "cameraRotation");
             const nearClipPlaneUniform = gl.getUniformLocation(program, "nearClipPlane");
             const fovUniform = gl.getUniformLocation(program, "fov");

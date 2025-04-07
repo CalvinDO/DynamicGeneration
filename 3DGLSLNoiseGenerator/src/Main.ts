@@ -5,7 +5,7 @@ namespace Portfolio {
     let cameraPos: number[] = [234.0, 324.0, 5.0];
     let cameraRotation: number[] = [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0];
     let fov: number = getRadians(80.0);
-    let nearClipPlane: number = 0.00;
+    let nearClipPlane: number = 0.07;
 
     function getRadians(_degrees: number): number {
         return _degrees / 360 * 2 * Math.PI;
@@ -15,7 +15,9 @@ namespace Portfolio {
         return response.text();
     }
 
+
     async function init() {
+
         const canvas = document.getElementById("glCanvas") as HTMLCanvasElement;
         const gl = canvas.getContext("webgl2", { antialias: true });
 
@@ -51,7 +53,7 @@ namespace Portfolio {
         const useHashUniform = gl.getUniformLocation(program, "useHash");
         const noiseTextureUniform = gl.getUniformLocation(program, "noiseTexture");
         const pixelRatioUniform = gl.getUniformLocation(program, "aspectRatio");
-        const cameraPosUniform = gl.getUniformLocation(program, "cameraPos");
+        const cameraPosUniform = gl.getUniformLocation(program, "startCameraPos");
         const cameraRotationUniform = gl.getUniformLocation(program, "cameraRotation");
         const nearClipPlaneUniform = gl.getUniformLocation(program, "nearClipPlane");
         const fovUniform = gl.getUniformLocation(program, "fov");
