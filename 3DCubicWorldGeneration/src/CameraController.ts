@@ -1,8 +1,20 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three/build/three.module.js';
 //import * as THREE from 'three';
 
-enum Key{
 
+//some data structure/pattern to story keyvalues (maybe with their ascii codes)
+//example:
+enum Key {
+    W = 'w',
+    A = 'a',
+    S = 's',
+    D = 'd',
+    SHIFT = 'shift',
+    SPACE = ' '  // Space key
+}
+
+interface KeyVectorMapping {
+    [key: string]: THREE.Vector3;
 }
 
 export class CameraController extends THREE.Object3D {
@@ -14,26 +26,61 @@ export class CameraController extends THREE.Object3D {
     private isXAxisInverted: boolean = false;
     private isYAxisInverted: boolean = false;
     //private deltatime: number = 0;
+    private pressedKeys: Set<Key> = new Set();;
 
-    
+    private keyMappings: Record<Key, THREE.Vector3> = {
+        [Key.W]: new THREE.Vector3(0, 0, 1),  // Forward
+        [Key.S]: new THREE.Vector3(0, 0, -1), // Backward
+        [Key.A]: new THREE.Vector3(-1, 0, 0), // Left
+        [Key.D]: new THREE.Vector3(1, 0, 0),  // Right
+        [Key.SPACE]: new THREE.Vector3(0, 1, 0), // Up
+        [Key.SHIFT]: new THREE.Vector3(0, -1, 0), // Down
+    };
 
     constructor() {
         super();
 
         CameraController.instance = this;
-        
-        window.addEventListener("mousemove", this.onMouseMove);
-        window.addEventListener("keydown", this.onKeyDown);
+
+        window.addEventListener("mousemove", CameraController.instance.onMouseMove);
+
+        // Use arrow functions to pass both parameters
+        window.addEventListener("keydown", (event: KeyboardEvent) => this.handleKeyEvent('add', event));
+        window.addEventListener("keyup", (event: KeyboardEvent) => this.handleKeyEvent('remove', event));
     }
 
-    public onKeyDown(_event: KeyboardEvent) {
-        if (_event.key == "w") {
-            CameraController.instance.position.add({ x: 0, y: 0, z: 0.2 });
+    private handleKeyEvent(action: 'add' | 'remove', _event: KeyboardEvent) {
+
+        const key = _event.key === ' ' ? Key.SPACE : Key[_event.key.toUpperCase() as keyof typeof Key];
+
+        if (key) {
+            // Add or remove the key from pressedKeys based on the action
+            action === 'add' ? this.pressedKeys.add(key) : this.pressedKeys.delete(key);
         }
     }
 
-    public update(_elapsedTime: number) {
-        //CameraController.instance.elapsedTime = _elapsedTime;
+    public update(_deltaTime: number) {
+
+        const movementVector = new THREE.Vector3();
+
+        // Check all pressed keys and add corresponding vector to movement vector
+        CameraController.instance.pressedKeys.forEach(key => {
+            const direction = CameraController.instance.keyMappings[key];
+            if (direction) {
+                movementVector.add(direction);
+            }
+        });
+
+        // Normalize movement vector if it's not zero
+        if (movementVector.length() > 0) {
+            movementVector.normalize();
+            CameraController.instance.accelerateTowardsNormalized(movementVector);
+        }
+    }
+
+    private accelerateTowardsNormalized(direction: THREE.Vector3) {
+        // Implement your custom acceleration logic here.
+        console.log('Accelerating towards:', direction);
     }
 
     public onMouseMove(_event: MouseEvent) {

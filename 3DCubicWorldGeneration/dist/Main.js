@@ -111,7 +111,7 @@ function init(ev) {
         function animate() {
             const deltaTime = clock.getDelta();
             timeUntilNextAutoResize -= deltaTime;
-            CameraController.instance.update(clock.elapsedTime);
+            CameraController.instance.update(deltaTime);
             if (false) {
                 boxGeometry.rotateX(1 * deltaTime);
                 boxGeometry.rotateY(1 * deltaTime);
