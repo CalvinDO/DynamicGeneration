@@ -42,7 +42,7 @@ export class CameraController extends THREE.Object3D {
         }
 
         let xRotation: number = CameraController.instance.rotation.x + xIncrement;
-        CameraController.instance.rotation.setFromVector3(new THREE.Vector3(xRotation, yRotation, 0));
+        CameraController.instance.rotation.setFromVector3(new THREE.Vector3(xRotation, yRotation, 0), 'YXZ');
 
         //CameraController.instance.node.mtxLocal.rotation.z = 0;
     }

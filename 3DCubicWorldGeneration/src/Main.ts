@@ -165,9 +165,11 @@ async function init(ev: Event): Promise<void> {
 
         CameraController.instance.update(clock.elapsedTime);
 
-        boxGeometry.rotateX(1 * deltaTime);
-        boxGeometry.rotateY(1 * deltaTime);
-        boxGeometry.rotateZ(1 * deltaTime);
+        if (false) {
+            boxGeometry.rotateX(1 * deltaTime);
+            boxGeometry.rotateY(1 * deltaTime);
+            boxGeometry.rotateZ(1 * deltaTime);
+        }
 
 
         if (timeUntilNextAutoResize <= 0) {
