@@ -29,8 +29,8 @@ export class CameraController extends THREE.Object3D {
     private pressedKeys: Set<Key> = new Set();;
 
     private keyMappings: Record<Key, THREE.Vector3> = {
-        [Key.W]: new THREE.Vector3(0, 0, 1),  // Forward
-        [Key.S]: new THREE.Vector3(0, 0, -1), // Backward
+        [Key.W]: new THREE.Vector3(0, 0, -1),  // Forward
+        [Key.S]: new THREE.Vector3(0, 0, 1), // Backward
         [Key.A]: new THREE.Vector3(-1, 0, 0), // Left
         [Key.D]: new THREE.Vector3(1, 0, 0),  // Right
         [Key.SPACE]: new THREE.Vector3(0, 1, 0), // Up
@@ -42,7 +42,7 @@ export class CameraController extends THREE.Object3D {
 
         CameraController.instance = this;
 
-        window.addEventListener("mousemove", CameraController.instance.onMouseMove);
+        window.addEventListener("mousemove", this.onMouseMove);
 
         // Use arrow functions to pass both parameters
         window.addEventListener("keydown", (event: KeyboardEvent) => this.handleKeyEvent('add', event));
@@ -73,14 +73,26 @@ export class CameraController extends THREE.Object3D {
 
         // Normalize movement vector if it's not zero
         if (movementVector.length() > 0) {
+
             movementVector.normalize();
+
+            this.applyCameraRotationToMovement(movementVector);
+
             CameraController.instance.accelerateTowardsNormalized(movementVector);
         }
     }
 
+    private applyCameraRotationToMovement(movementVector: THREE.Vector3) {
+        // Create a rotation matrix based on the camera's world rotation
+        let rotationMatrix = new THREE.Matrix4();
+        rotationMatrix.identity().extractRotation(this.matrixWorld); // Extract camera rotation from its world matrix
+
+        // Apply the rotation matrix to the movement vector
+        movementVector.applyMatrix4(rotationMatrix);
+    }
+
     private accelerateTowardsNormalized(direction: THREE.Vector3) {
-        // Implement your custom acceleration logic here.
-        console.log('Accelerating towards:', direction);
+        this.position.add(direction);
     }
 
     public onMouseMove(_event: MouseEvent) {

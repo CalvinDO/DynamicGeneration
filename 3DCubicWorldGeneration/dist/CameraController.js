@@ -22,15 +22,15 @@ export class CameraController extends THREE.Object3D {
         //private deltatime: number = 0;
         this.pressedKeys = new Set();
         this.keyMappings = {
-            [Key.W]: new THREE.Vector3(0, 0, 1), // Forward
-            [Key.S]: new THREE.Vector3(0, 0, -1), // Backward
+            [Key.W]: new THREE.Vector3(0, 0, -1), // Forward
+            [Key.S]: new THREE.Vector3(0, 0, 1), // Backward
             [Key.A]: new THREE.Vector3(-1, 0, 0), // Left
             [Key.D]: new THREE.Vector3(1, 0, 0), // Right
             [Key.SPACE]: new THREE.Vector3(0, 1, 0), // Up
             [Key.SHIFT]: new THREE.Vector3(0, -1, 0), // Down
         };
         CameraController.instance = this;
-        window.addEventListener("mousemove", CameraController.instance.onMouseMove);
+        window.addEventListener("mousemove", this.onMouseMove);
         // Use arrow functions to pass both parameters
         window.addEventListener("keydown", (event) => this.handleKeyEvent('add', event));
         window.addEventListener("keyup", (event) => this.handleKeyEvent('remove', event));
@@ -54,12 +54,19 @@ export class CameraController extends THREE.Object3D {
         // Normalize movement vector if it's not zero
         if (movementVector.length() > 0) {
             movementVector.normalize();
+            this.applyCameraRotationToMovement(movementVector);
             CameraController.instance.accelerateTowardsNormalized(movementVector);
         }
     }
+    applyCameraRotationToMovement(movementVector) {
+        // Create a rotation matrix based on the camera's world rotation
+        let rotationMatrix = new THREE.Matrix4();
+        rotationMatrix.identity().extractRotation(this.matrixWorld); // Extract camera rotation from its world matrix
+        // Apply the rotation matrix to the movement vector
+        movementVector.applyMatrix4(rotationMatrix);
+    }
     accelerateTowardsNormalized(direction) {
-        // Implement your custom acceleration logic here.
-        console.log('Accelerating towards:', direction);
+        this.position.add(direction);
     }
     onMouseMove(_event) {
         let yRotation = CameraController.instance.rotation.y + (CameraController.instance.isYAxisInverted ? 1 : -1) * _event.movementX * CameraController.instance.mouseTorqueFactor /* CameraController.instance.elapsedTime*/;
