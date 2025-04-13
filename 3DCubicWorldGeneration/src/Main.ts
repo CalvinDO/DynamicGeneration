@@ -1,5 +1,7 @@
 import { loadThreeJs } from './three-loader.js';
-import { AmbientLight, DirectionalLight, Euler, Mesh, Vector2, Vector3 } from 'three';
+import { AmbientLight, DirectionalLight, Euler, Matrix4, Mesh, Vector2, Vector3 } from 'three';
+import { Noise } from './Noise.js';
+import { CameraController } from './CameraController.js';
 
 
 let canvas: HTMLCanvasElement;
@@ -11,27 +13,32 @@ let timeUntilNextAutoResize: number = autoResizeInterval;
 let timeLastFrame: number = Date.now();
 let deltaTime: number = 0;
 
+let flyControlsSpeed: number = 100;
 
 
 async function init(ev: Event): Promise<void> {
 
     const THREE = await loadThreeJs();
 
+    const clock = new THREE.Clock();
 
-    let camStartPos: Vector3 = new THREE.Vector3(50, 80, 150);
-    let camStartRot: Euler = new THREE.Euler(-0.4, 0.0, 0.0);
+    let camStartPos: Vector3 = new THREE.Vector3(0, 0, 1040);
+    let camStartRot: Euler = new THREE.Euler(-0.0, 0.0, 0.0);
+
+    const cameraController: CameraController = new CameraController();
 
     const { scene, renderer, camera } = setupSceneBasics();
     setupLight();
+
 
     // Create a shared material (all cubes will use this)
     const { boxGeometry, material } = createFlyweights();
 
 
-    const worldSize: Vector3 = new THREE.Vector3(50, 50, 50);
+    const worldSize: Vector3 = new THREE.Vector3(200, 200, 200);
 
     // GenerateCubes
-    const cubes: Mesh[] = generateCubes();
+    generateCubes();
 
 
     animate();
@@ -42,29 +49,44 @@ async function init(ev: Event): Promise<void> {
     // -----------------------------------------------------------
 
 
-    function generateCubes(): Mesh[] {
+    function generateCubes(): void {
 
-        let cubes: Mesh[] = [];
+        // Create an InstancedMesh to hold all cubes
 
-        let lowestCorner: Vector3 = worldSize.multiplyScalar(-0.5);
-        let highestCorner: Vector3 = worldSize.multiplyScalar(0.5);
+        let lowestCorner: Vector3 = worldSize.clone().multiplyScalar(-0.5);
+        let highestCorner: Vector3 = worldSize.clone().multiplyScalar(0.5);
+
+        let matrices: Matrix4[] = [];
 
         for (let xIndex: number = lowestCorner.x; xIndex < highestCorner.x; xIndex++) {
             for (let yIndex: number = lowestCorner.y; yIndex < highestCorner.y; yIndex++) {
                 for (let zIndex: number = lowestCorner.z; zIndex < highestCorner.z; zIndex++) {
 
                     const currentPos: Vector3 = new THREE.Vector3(xIndex, yIndex, zIndex);
+                    let pseudoRN: number = Noise.getPRNInt(currentPos);
 
-                    if (Noise.hash(currentPos) > 0.9) {
+                    if (pseudoRN > 0.34 && pseudoRN < 0.345) {
+                        // Create a matrix that represents the position of the cube
+                        const matrix = new THREE.Matrix4();
+                        matrix.setPosition(currentPos);
 
-                        const newCube: Mesh = instantiateCube(currentPos);
-                        cubes.push(newCube);
+                        matrices.push(matrix);
                     }
                 }
             }
         }
 
-        return cubes;
+        const instanceCount = matrices.length;
+        console.log("instances: ", instanceCount);
+
+        const instanceMesh = new THREE.InstancedMesh(boxGeometry, material, instanceCount);
+
+
+        matrices.forEach((matrix: Matrix4, index: number) => {
+            instanceMesh.setMatrixAt(index, matrix);
+        })
+
+        scene.add(instanceMesh);
     }
 
 
@@ -86,13 +108,19 @@ async function init(ev: Event): Promise<void> {
 
         const scene = new THREE.Scene();
 
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.copy(camStartPos);
-        camera.rotation.copy(camStartRot);
+        const camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.1, 1000);
+
+        cameraController.add(camera);
+        cameraController.position.copy(camStartPos);
+        cameraController.rotation.copy(camStartRot);
+
+        scene.add(cameraController);
 
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Soft shadows, or use PCFShadowMap for better performance.
+
         document.body.appendChild(renderer.domElement);
 
 
@@ -105,6 +133,8 @@ async function init(ev: Event): Promise<void> {
         const directionalLight: DirectionalLight = new THREE.DirectionalLight(0xffffff, 0.88);
         directionalLight.position.set(-4, 5, 4);
         directionalLight.castShadow = true;
+        directionalLight.shadow.mapSize.set(2048, 2048);
+
         scene.add(directionalLight);
 
         const ambientLight: AmbientLight = new THREE.AmbientLight(0xffffff, 0.6180339);
@@ -128,19 +158,16 @@ async function init(ev: Event): Promise<void> {
     // 9. Create an animate function to render the scene
     function animate() {
 
-        let currentTime: number = Date.now();
-        deltaTime = currentTime - timeLastFrame;
-        deltaTime *= 0.001;
-        timeLastFrame = currentTime;
+        const deltaTime = clock.getDelta();
 
         timeUntilNextAutoResize -= deltaTime;
 
-        /*
-        cubes.forEach(cube => {
-            cube.rotation.x += 1 * deltaTime;
-            cube.rotation.y += 1 * deltaTime;
-        })
-        */
+
+        CameraController.instance.update(clock.elapsedTime);
+
+        boxGeometry.rotateX(1 * deltaTime);
+        boxGeometry.rotateY(1 * deltaTime);
+        boxGeometry.rotateZ(1 * deltaTime);
 
 
         if (timeUntilNextAutoResize <= 0) {
@@ -153,8 +180,6 @@ async function init(ev: Event): Promise<void> {
         requestAnimationFrame(animate);
     }
 
-
-    // Resize canvas dynamically
     function resizeCanvas() {
 
 
@@ -180,53 +205,6 @@ async function init(ev: Event): Promise<void> {
 
     window.addEventListener("resize", resizeCanvas);
     resizeCanvas();
-}
-
-export class Noise {
-
-    public static externalSeed: number = 20072001; // Use uint seed for better randomness
-    //public static LARGE_PRIME = 16807.234233123284755621;
-
-
-    public static getRandom(): number {
-        return Math.random();
-    }
-
-
-    // Rotate function for better bit mixing
-    public static rotateLeft(v: number, shift: number): number {
-        return (v << shift) | (v >> (32 - shift));
-    }
-
-    // Hash step with improved seed mixing
-    public static hashStep(value: number, seed: number): number {
-
-        let rotAmount: number = 7 + (seed % 5);
-        value ^= seed;
-        value = Noise.rotateLeft(value, rotAmount);
-        value *= 0x85EBCA6B;
-        value = Noise.rotateLeft(value, rotAmount);
-        value *= 0xC2B2AE35;
-        return Noise.rotateLeft(value, rotAmount);
-    }
-
-    // Hash functions for different vector dimensions
-    public static hash(p: Vector3): number {
-
-        let h1: number = Noise.externalSeed * 0xDEADBEEF;
-        let h2: number = 0xC2B2AE35 + Noise.externalSeed;
-        let h3 = Noise.externalSeed * 0xB5F4A35E + 0x2DA38F7A;
-
-        h1 = Noise.hashStep((p.x), h1);
-        h2 = Noise.hashStep((p.y), h2);
-        h3 = Noise.hashStep((p.z), h3);
-
-        let finalHash = h1 ^ Noise.rotateLeft(h2, 13);
-        finalHash ^= Noise.rotateLeft(h3, 13);
-
-        return (finalHash & 0x7fffffff) / (0x7fffffff);
-    }
-
 }
 
 window.addEventListener("load", init);

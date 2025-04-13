@@ -21,5 +21,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build"
+  },
+  "dependencies": {
+    "three-stdlib": "^2.35.15"
   }
 }

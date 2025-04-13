@@ -8,44 +8,59 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 import { loadThreeJs } from './three-loader.js';
+import { Noise } from './Noise.js';
+import { CameraController } from './CameraController.js';
 let canvas;
 let aspectRatio = 16 / 9;
 let autoResizeInterval = 0.5;
 let timeUntilNextAutoResize = autoResizeInterval;
 let timeLastFrame = Date.now();
 let deltaTime = 0;
+let flyControlsSpeed = 100;
 function init(ev) {
     return __awaiter(this, void 0, void 0, function* () {
         const THREE = yield loadThreeJs();
-        let camStartPos = new THREE.Vector3(50, 80, 150);
-        let camStartRot = new THREE.Euler(-0.4, 0.0, 0.0);
+        const clock = new THREE.Clock();
+        let camStartPos = new THREE.Vector3(0, 0, 1040);
+        let camStartRot = new THREE.Euler(-0.0, 0.0, 0.0);
+        const cameraController = new CameraController();
         const { scene, renderer, camera } = setupSceneBasics();
         setupLight();
         // Create a shared material (all cubes will use this)
         const { boxGeometry, material } = createFlyweights();
-        const worldSize = new THREE.Vector3(50, 50, 50);
+        const worldSize = new THREE.Vector3(200, 200, 200);
         // GenerateCubes
-        const cubes = generateCubes();
+        generateCubes();
         animate();
         // -----------------------------------------------------------
         // ---------------- FUNCTION DECLERATIONS --------------------
         // -----------------------------------------------------------
         function generateCubes() {
-            let cubes = [];
-            let lowestCorner = worldSize.multiplyScalar(-0.5);
-            let highestCorner = worldSize.multiplyScalar(0.5);
+            // Create an InstancedMesh to hold all cubes
+            let lowestCorner = worldSize.clone().multiplyScalar(-0.5);
+            let highestCorner = worldSize.clone().multiplyScalar(0.5);
+            let matrices = [];
             for (let xIndex = lowestCorner.x; xIndex < highestCorner.x; xIndex++) {
                 for (let yIndex = lowestCorner.y; yIndex < highestCorner.y; yIndex++) {
                     for (let zIndex = lowestCorner.z; zIndex < highestCorner.z; zIndex++) {
                         const currentPos = new THREE.Vector3(xIndex, yIndex, zIndex);
-                        if (Noise.hash(currentPos) > 0.9) {
-                            const newCube = instantiateCube(currentPos);
-                            cubes.push(newCube);
+                        let pseudoRN = Noise.getPRNInt(currentPos);
+                        if (pseudoRN > 0.34 && pseudoRN < 0.345) {
+                            // Create a matrix that represents the position of the cube
+                            const matrix = new THREE.Matrix4();
+                            matrix.setPosition(currentPos);
+                            matrices.push(matrix);
                         }
                     }
                 }
             }
-            return cubes;
+            const instanceCount = matrices.length;
+            console.log("instances: ", instanceCount);
+            const instanceMesh = new THREE.InstancedMesh(boxGeometry, material, instanceCount);
+            matrices.forEach((matrix, index) => {
+                instanceMesh.setMatrixAt(index, matrix);
+            });
+            scene.add(instanceMesh);
         }
         function createFlyweights() {
             const material = new THREE.MeshStandardMaterial({
@@ -59,12 +74,15 @@ function init(ev) {
         }
         function setupSceneBasics() {
             const scene = new THREE.Scene();
-            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.copy(camStartPos);
-            camera.rotation.copy(camStartRot);
+            const camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.1, 1000);
+            cameraController.add(camera);
+            cameraController.position.copy(camStartPos);
+            cameraController.rotation.copy(camStartRot);
+            scene.add(cameraController);
             const renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Soft shadows, or use PCFShadowMap for better performance.
             document.body.appendChild(renderer.domElement);
             return { scene, renderer, camera };
         }
@@ -72,6 +90,7 @@ function init(ev) {
             const directionalLight = new THREE.DirectionalLight(0xffffff, 0.88);
             directionalLight.position.set(-4, 5, 4);
             directionalLight.castShadow = true;
+            directionalLight.shadow.mapSize.set(2048, 2048);
             scene.add(directionalLight);
             const ambientLight = new THREE.AmbientLight(0xffffff, 0.6180339);
             scene.add(ambientLight);
@@ -86,17 +105,12 @@ function init(ev) {
         }
         // 9. Create an animate function to render the scene
         function animate() {
-            let currentTime = Date.now();
-            deltaTime = currentTime - timeLastFrame;
-            deltaTime *= 0.001;
-            timeLastFrame = currentTime;
+            const deltaTime = clock.getDelta();
             timeUntilNextAutoResize -= deltaTime;
-            /*
-            cubes.forEach(cube => {
-                cube.rotation.x += 1 * deltaTime;
-                cube.rotation.y += 1 * deltaTime;
-            })
-            */
+            CameraController.instance.update(clock.elapsedTime);
+            boxGeometry.rotateX(1 * deltaTime);
+            boxGeometry.rotateY(1 * deltaTime);
+            boxGeometry.rotateZ(1 * deltaTime);
             if (timeUntilNextAutoResize <= 0) {
                 resizeCanvas();
                 timeUntilNextAutoResize = autoResizeInterval;
@@ -104,7 +118,6 @@ function init(ev) {
             renderer.render(scene, camera);
             requestAnimationFrame(animate);
         }
-        // Resize canvas dynamically
         function resizeCanvas() {
             canvas = document.querySelector("canvas");
             const gl = canvas.getContext("webgl2", { antialias: true });
@@ -124,38 +137,5 @@ function init(ev) {
         resizeCanvas();
     });
 }
-export class Noise {
-    //public static LARGE_PRIME = 16807.234233123284755621;
-    static getRandom() {
-        return Math.random();
-    }
-    // Rotate function for better bit mixing
-    static rotateLeft(v, shift) {
-        return (v << shift) | (v >> (32 - shift));
-    }
-    // Hash step with improved seed mixing
-    static hashStep(value, seed) {
-        let rotAmount = 7 + (seed % 5);
-        value ^= seed;
-        value = Noise.rotateLeft(value, rotAmount);
-        value *= 0x85EBCA6B;
-        value = Noise.rotateLeft(value, rotAmount);
-        value *= 0xC2B2AE35;
-        return Noise.rotateLeft(value, rotAmount);
-    }
-    // Hash functions for different vector dimensions
-    static hash(p) {
-        let h1 = Noise.externalSeed * 0xDEADBEEF;
-        let h2 = 0xC2B2AE35 + Noise.externalSeed;
-        let h3 = Noise.externalSeed * 0xB5F4A35E + 0x2DA38F7A;
-        h1 = Noise.hashStep((p.x), h1);
-        h2 = Noise.hashStep((p.y), h2);
-        h3 = Noise.hashStep((p.z), h3);
-        let finalHash = h1 ^ Noise.rotateLeft(h2, 13);
-        finalHash ^= Noise.rotateLeft(h3, 13);
-        return (finalHash & 0x7fffffff) / (0x7fffffff);
-    }
-}
-Noise.externalSeed = 20072001; // Use uint seed for better randomness
 window.addEventListener("load", init);
 //# sourceMappingURL=Main.js.map
