@@ -83,7 +83,11 @@ function init(ev) {
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.shadowMap.enabled = true;
             renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Soft shadows, or use PCFShadowMap for better performance.
-            document.body.appendChild(renderer.domElement);
+            canvas = renderer.domElement;
+            document.body.appendChild(canvas);
+            canvas.addEventListener("click", () => __awaiter(this, void 0, void 0, function* () {
+                yield canvas.requestPointerLock();
+            }));
             return { scene, renderer, camera };
         }
         function setupLight() {
@@ -121,7 +125,6 @@ function init(ev) {
             requestAnimationFrame(animate);
         }
         function resizeCanvas() {
-            canvas = document.querySelector("canvas");
             const gl = canvas.getContext("webgl2", { antialias: true });
             if (!gl) {
                 console.error("WebGL not supported");

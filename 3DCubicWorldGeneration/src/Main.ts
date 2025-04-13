@@ -18,6 +18,7 @@ let flyControlsSpeed: number = 100;
 
 async function init(ev: Event): Promise<void> {
 
+
     const THREE = await loadThreeJs();
 
     const clock = new THREE.Clock();
@@ -39,6 +40,7 @@ async function init(ev: Event): Promise<void> {
 
     // GenerateCubes
     generateCubes();
+
 
 
     animate();
@@ -121,9 +123,13 @@ async function init(ev: Event): Promise<void> {
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Soft shadows, or use PCFShadowMap for better performance.
 
-        document.body.appendChild(renderer.domElement);
+        canvas = renderer.domElement;
+        document.body.appendChild(canvas);
 
 
+        canvas.addEventListener("click", async () => {
+            await canvas.requestPointerLock();
+        });
 
         return { scene, renderer, camera };
     }
@@ -184,8 +190,6 @@ async function init(ev: Event): Promise<void> {
 
     function resizeCanvas() {
 
-
-        canvas = <HTMLCanvasElement>document.querySelector("canvas");
         const gl = canvas.getContext("webgl2", { antialias: true });
 
         if (!gl) {
