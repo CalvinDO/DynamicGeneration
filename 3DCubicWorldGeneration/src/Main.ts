@@ -22,7 +22,7 @@ async function init(ev: Event): Promise<void> {
 
     const clock = new THREE.Clock();
 
-    let camStartPos: Vector3 = new THREE.Vector3(0, 0, 1040);
+    let camStartPos: Vector3 = new THREE.Vector3(0, 0, 40);
     let camStartRot: Euler = new THREE.Euler(-0.0, 0.0, 0.0);
 
     const cameraController: CameraController = new CameraController();

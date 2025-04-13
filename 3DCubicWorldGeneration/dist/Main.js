@@ -21,7 +21,7 @@ function init(ev) {
     return __awaiter(this, void 0, void 0, function* () {
         const THREE = yield loadThreeJs();
         const clock = new THREE.Clock();
-        let camStartPos = new THREE.Vector3(0, 0, 1040);
+        let camStartPos = new THREE.Vector3(0, 0, 40);
         let camStartRot = new THREE.Euler(-0.0, 0.0, 0.0);
         const cameraController = new CameraController();
         const { scene, renderer, camera } = setupSceneBasics();
