@@ -1,0 +1,19 @@
+{
+    "compilerOptions": {
+      "target": "es6",                   // Using ES6 as the output target
+      "module": "es6",                   // Ensure the module system is set to 'es6' for modern imports
+      "moduleResolution": "node",        // Use Node's module resolution strategy
+      "sourceMap": true,                 // Enable source maps for easier debugging
+      "esModuleInterop": true,           // Allows default imports from modules without a default export
+      "skipLibCheck": true,              // Skip checking types in libraries
+      "outDir": "./dist",                // Output directory for compiled files
+      "strict": true,                    // Enable all strict type-checking options
+      "resolveJsonModule": true          // Allows importing JSON files as modules
+    },
+    "include": [
+      "src/**/*.ts"                       // Include all TypeScript files under 'src' directory
+    ],
+    "exclude": [
+      "node_modules"                      // Exclude the 'node_modules' folder from compilation
+    ]
+  }
