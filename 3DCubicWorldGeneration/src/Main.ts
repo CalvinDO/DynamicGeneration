@@ -23,7 +23,7 @@ async function init(ev: Event): Promise<void> {
 
     const clock = new THREE.Clock();
 
-    let camStartPos: Vector3 = new THREE.Vector3(0, 0, 40);
+    let camStartPos: Vector3 = new THREE.Vector3(0, 0, 240);
     let camStartRot: Euler = new THREE.Euler(-0.0, 0.0, 0.0);
 
     const cameraController: CameraController = new CameraController();
@@ -36,7 +36,7 @@ async function init(ev: Event): Promise<void> {
     const { boxGeometry, material } = createFlyweights();
 
 
-    const worldSize: Vector3 = new THREE.Vector3(200, 200, 200);
+    const worldSize: Vector3 = new THREE.Vector3(300, 300, 300);
 
     // GenerateCubes
     generateCubes();
@@ -67,7 +67,7 @@ async function init(ev: Event): Promise<void> {
                     const currentPos: Vector3 = new THREE.Vector3(xIndex, yIndex, zIndex);
                     let pseudoRN: number = Noise.getPRNInt(currentPos);
 
-                    if (pseudoRN > 0.34 && pseudoRN < 0.345) {
+                    if (pseudoRN > 0.34 && pseudoRN < 0.35) {
                         // Create a matrix that represents the position of the cube
                         const matrix = new THREE.Matrix4();
                         matrix.setPosition(currentPos);

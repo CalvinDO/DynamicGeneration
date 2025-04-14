@@ -21,14 +21,14 @@ function init(ev) {
     return __awaiter(this, void 0, void 0, function* () {
         const THREE = yield loadThreeJs();
         const clock = new THREE.Clock();
-        let camStartPos = new THREE.Vector3(0, 0, 40);
+        let camStartPos = new THREE.Vector3(0, 0, 240);
         let camStartRot = new THREE.Euler(-0.0, 0.0, 0.0);
         const cameraController = new CameraController();
         const { scene, renderer, camera } = setupSceneBasics();
         setupLight();
         // Create a shared material (all cubes will use this)
         const { boxGeometry, material } = createFlyweights();
-        const worldSize = new THREE.Vector3(200, 200, 200);
+        const worldSize = new THREE.Vector3(300, 300, 300);
         // GenerateCubes
         generateCubes();
         animate();
@@ -45,7 +45,7 @@ function init(ev) {
                     for (let zIndex = lowestCorner.z; zIndex < highestCorner.z; zIndex++) {
                         const currentPos = new THREE.Vector3(xIndex, yIndex, zIndex);
                         let pseudoRN = Noise.getPRNInt(currentPos);
-                        if (pseudoRN > 0.34 && pseudoRN < 0.345) {
+                        if (pseudoRN > 0.34 && pseudoRN < 0.35) {
                             // Create a matrix that represents the position of the cube
                             const matrix = new THREE.Matrix4();
                             matrix.setPosition(currentPos);
