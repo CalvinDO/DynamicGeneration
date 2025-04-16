@@ -21,14 +21,14 @@ function init(ev) {
     return __awaiter(this, void 0, void 0, function* () {
         const THREE = yield loadThreeJs();
         const clock = new THREE.Clock();
-        let camStartPos = new THREE.Vector3(0, 0, 240);
+        let camStartPos = new THREE.Vector3(0, 0, 140);
         let camStartRot = new THREE.Euler(-0.0, 0.0, 0.0);
         const cameraController = new CameraController();
         const { scene, renderer, camera } = setupSceneBasics();
         setupLight();
         // Create a shared material (all cubes will use this)
         const { boxGeometry, material } = createFlyweights();
-        const worldSize = new THREE.Vector3(300, 300, 300);
+        const worldSizeRadiusVector = new THREE.Vector3(50, 50, 50);
         // GenerateCubes
         generateCubes();
         animate();
@@ -37,44 +37,80 @@ function init(ev) {
         // -----------------------------------------------------------
         function generateCubes() {
             // Create an InstancedMesh to hold all cubes
-            let lowestCorner = worldSize.clone().multiplyScalar(-0.5);
-            let highestCorner = worldSize.clone().multiplyScalar(0.5);
+            let lowestCorner = worldSizeRadiusVector.clone().multiplyScalar(-1);
+            let highestCorner = lowestCorner.clone().add(worldSizeRadiusVector.clone().multiplyScalar(2));
             let matrices = [];
+            let colors = [];
+            let numbers = [];
+            let positions = [];
+            let blockIndex = 0;
             for (let xIndex = lowestCorner.x; xIndex < highestCorner.x; xIndex++) {
                 for (let yIndex = lowestCorner.y; yIndex < highestCorner.y; yIndex++) {
                     for (let zIndex = lowestCorner.z; zIndex < highestCorner.z; zIndex++) {
-                        const currentPos = new THREE.Vector3(xIndex, yIndex, zIndex);
-                        let pseudoRN = Noise.getPRNInt(currentPos);
-                        if (pseudoRN > 0.34 && pseudoRN < 0.35) {
-                            // Create a matrix that represents the position of the cube
+                        const currentPos = (new THREE.Vector3(Math.floor(xIndex), Math.floor(yIndex), Math.floor(zIndex))).floor();
+                        const pseudoRN = Noise.getNoise(currentPos);
+                        numbers.push(pseudoRN);
+                        positions.push(currentPos);
+                        if (pseudoRN > 0.0 && pseudoRN < 0.10) {
                             const matrix = new THREE.Matrix4();
                             matrix.setPosition(currentPos);
                             matrices.push(matrix);
+                            const color = new THREE.Color();
+                            color.setHSL(pseudoRN, 0.718, 0.5);
+                            colors.push(color.r, color.g, color.b);
+                            blockIndex++;
                         }
                     }
                 }
             }
+            //checkDuplicates(numbers, positions);
             const instanceCount = matrices.length;
             console.log("instances: ", instanceCount);
             const instanceMesh = new THREE.InstancedMesh(boxGeometry, material, instanceCount);
+            instanceMesh.castShadow = true;
+            instanceMesh.receiveShadow = true;
             matrices.forEach((matrix, index) => {
                 instanceMesh.setMatrixAt(index, matrix);
             });
+            const colorAttr = new THREE.InstancedBufferAttribute(new Float32Array(colors), 3);
+            instanceMesh.instanceColor = colorAttr;
             scene.add(instanceMesh);
         }
+        function checkDuplicates(_numbers, positions) {
+            const uniqueElements = new Set();
+            const duplicates = [];
+            const posAtDup = [];
+            _numbers.forEach((item, index) => {
+                if (uniqueElements.has(item)) {
+                    duplicates.push(item);
+                    posAtDup.push(positions[index]);
+                }
+                else {
+                    uniqueElements.add(item);
+                }
+            });
+            console.log(duplicates.length);
+            for (let i = 0; i < duplicates.length; i++) {
+                console.log(posAtDup[i], duplicates[i]);
+            }
+        }
         function createFlyweights() {
+            const blockTexture = (new THREE.TextureLoader).load('src/textures/wool_colored_white.png');
+            blockTexture.magFilter = THREE.NearestFilter;
+            blockTexture.minFilter = THREE.NearestFilter;
+            blockTexture.generateMipmaps = false;
             const material = new THREE.MeshStandardMaterial({
-                color: 0x00aaff,
-                roughness: 0.5,
+                map: blockTexture,
+                roughness: 0.94,
                 metalness: 0.1
             });
-            // Create the geometry (same geometry for both cubes)
+            blockTexture.colorSpace = THREE.SRGBColorSpace;
             const boxGeometry = new THREE.BoxGeometry();
             return { boxGeometry, material };
         }
         function setupSceneBasics() {
             const scene = new THREE.Scene();
-            const camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.1, 1000);
+            const camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.1, 10000);
             cameraController.add(camera);
             cameraController.position.copy(camStartPos);
             cameraController.rotation.copy(camStartRot);
@@ -83,6 +119,7 @@ function init(ev) {
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.shadowMap.enabled = true;
             renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Soft shadows, or use PCFShadowMap for better performance.
+            renderer.outputColorSpace = THREE.SRGBColorSpace;
             canvas = renderer.domElement;
             document.body.appendChild(canvas);
             canvas.addEventListener("click", () => __awaiter(this, void 0, void 0, function* () {
@@ -91,22 +128,28 @@ function init(ev) {
             return { scene, renderer, camera };
         }
         function setupLight() {
-            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.88);
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 2.5);
             directionalLight.position.set(-4, 5, 4);
             directionalLight.castShadow = true;
             directionalLight.shadow.mapSize.set(2048, 2048);
             scene.add(directionalLight);
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6180339);
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
             scene.add(ambientLight);
         }
-        function instantiateCube(_position) {
+        /*
+        function instantiateCube(_position: Vector3): Mesh {
+    
             const newCube = new THREE.Mesh(boxGeometry, material);
+    
             newCube.castShadow = true;
             newCube.receiveShadow = true;
-            newCube.position.copy(_position); // Position the first cube at (-2, 0, 0)
+            newCube.position.copy(_position);// Position the first cube at (-2, 0, 0)
+    
             scene.add(newCube);
+    
             return newCube;
         }
+    */
         // 9. Create an animate function to render the scene
         function animate() {
             const deltaTime = clock.getDelta();

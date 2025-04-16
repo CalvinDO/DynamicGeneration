@@ -43,6 +43,7 @@ export class CameraController extends THREE.Object3D {
         }
     }
     update(_deltaTime) {
+        CameraController.deltaTime = _deltaTime;
         const movementVector = new THREE.Vector3();
         // Check all pressed keys and add corresponding vector to movement vector
         CameraController.instance.pressedKeys.forEach(key => {
@@ -66,7 +67,7 @@ export class CameraController extends THREE.Object3D {
         movementVector.applyMatrix4(rotationMatrix);
     }
     accelerateTowardsNormalized(direction) {
-        this.position.add(direction);
+        this.position.add(direction.clone().multiplyScalar(CameraController.deltaTime * CameraController.speed));
     }
     onMouseMove(_event) {
         let yRotation = CameraController.instance.rotation.y + (CameraController.instance.isYAxisInverted ? 1 : -1) * _event.movementX * CameraController.instance.mouseTorqueFactor /* CameraController.instance.elapsedTime*/;
@@ -84,4 +85,6 @@ export class CameraController extends THREE.Object3D {
         //CameraController.instance.node.mtxLocal.rotation.z = 0;
     }
 }
+CameraController.deltaTime = 0;
+CameraController.speed = 100;
 //# sourceMappingURL=CameraController.js.map

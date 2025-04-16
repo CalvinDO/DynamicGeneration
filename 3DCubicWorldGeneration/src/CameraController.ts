@@ -1,4 +1,5 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three/build/three.module.js';
+import { Camera } from 'three';
 //import * as THREE from 'three';
 
 
@@ -20,6 +21,9 @@ interface KeyVectorMapping {
 export class CameraController extends THREE.Object3D {
 
     public static instance: CameraController;
+
+    private static deltaTime: number = 0;
+    private static speed: number = 100;
 
     private mouseTorqueFactor: number = 0.001;
     private maxXRotation: number = Math.PI / 2;
@@ -61,6 +65,9 @@ export class CameraController extends THREE.Object3D {
 
     public update(_deltaTime: number) {
 
+        CameraController.deltaTime = _deltaTime;
+
+
         const movementVector = new THREE.Vector3();
 
         // Check all pressed keys and add corresponding vector to movement vector
@@ -92,7 +99,7 @@ export class CameraController extends THREE.Object3D {
     }
 
     private accelerateTowardsNormalized(direction: THREE.Vector3) {
-        this.position.add(direction);
+        this.position.add(direction.clone().multiplyScalar(CameraController.deltaTime * CameraController.speed));
     }
 
     public onMouseMove(_event: MouseEvent) {
