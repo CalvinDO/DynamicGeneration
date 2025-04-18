@@ -24,7 +24,7 @@ export class Noise {
         return t * t * t * (t * (t * 6.0 - 15.0) + 10.0);
     }
     static grad(p) {
-        const [, rawHash] = Noise.getPRNInt(p);
+        const [test, rawHash] = Noise.getPRNInt(p);
         const hash = rawHash * Noise.LARGE_PRIME;
         const theta = hash;
         const phi = Math.acos(2.0 * Noise.fract(hash * 0.61803398349875) - 1.0);
@@ -66,7 +66,7 @@ export class Noise {
         const back = (1.0 - fade_t1) * p4p5 + fade_t1 * p6p7;
         return (1.0 - fade_t2) * front + fade_t2 * back;
     }
-    static getNoise(_input) {
+    static getDensity(_input) {
         let n = 0.0;
         for (let octaveIndex = 0; octaveIndex < Noise.amountOctaves; octaveIndex++) {
             const exponent = Noise.exponentFactor * octaveIndex;
@@ -82,11 +82,11 @@ export class Noise {
         return n;
     }
 }
-Noise.seed = 0x01324641;
+Noise.seed = 0x66863741;
 Noise.LARGE_PRIME = 16807.234233123284755621;
 Noise.frequency = 0.02;
 Noise.amplitude = 1.00;
-Noise.base = 2.0;
+Noise.base = 2;
 Noise.exponentFactor = 1;
-Noise.amountOctaves = 6;
+Noise.amountOctaves = 5;
 //# sourceMappingURL=Noise.js.map

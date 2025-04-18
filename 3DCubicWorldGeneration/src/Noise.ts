@@ -3,14 +3,14 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three/build/three.module.js
 
 export class Noise {
 
-    private static seed = 0x01324641;
+    private static seed = 0x66863741;
     private static LARGE_PRIME: number = 16807.234233123284755621;
 
     private static frequency = 0.02;
     private static amplitude = 1.00;
-    private static base = 2.0;
+    private static base = 2;
     private static exponentFactor = 1;
-    private static amountOctaves = 6;
+    private static amountOctaves = 5;
 
 
     private static rotateLeft(value: number, bits: number): number {
@@ -49,7 +49,8 @@ export class Noise {
 
     private static grad(p: THREE.Vector3): THREE.Vector3 {
 
-        const [, rawHash] = Noise.getPRNInt(p);
+        const [test, rawHash] = Noise.getPRNInt(p);
+
         const hash = rawHash * Noise.LARGE_PRIME;
 
         const theta = hash;
@@ -109,7 +110,7 @@ export class Noise {
         return (1.0 - fade_t2) * front + fade_t2 * back;
     }
 
-    public static getNoise(_input: THREE.Vector3): number {
+    public static getDensity(_input: THREE.Vector3): number {
 
 
         let n = 0.0;

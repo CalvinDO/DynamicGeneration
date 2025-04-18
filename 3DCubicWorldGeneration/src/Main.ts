@@ -2,6 +2,8 @@ import { loadThreeJs } from './three-loader.js';
 import { AmbientLight, DirectionalLight, Euler, Matrix4, Mesh, Vector2, Vector3 } from 'three';
 import { Noise } from './Noise.js';
 import { CameraController } from './CameraController.js';
+import { debug } from 'console';
+import { debuglog } from 'util';
 
 
 let canvas: HTMLCanvasElement;
@@ -15,6 +17,18 @@ let deltaTime: number = 0;
 
 let flyControlsSpeed: number = 100;
 
+let debugLog: boolean = false;
+
+
+let matrices: Matrix4[] = [];
+let colors: number[] = [];
+
+let numbers: number[] = [];
+let positions: Vector3[] = [];
+
+const seaLevel: number = 0;
+const expectedHeight: number = 0;
+const squashFactor: number = 0.01;
 
 async function init(ev: Event): Promise<void> {
 
@@ -22,8 +36,8 @@ async function init(ev: Event): Promise<void> {
 
     const clock = new THREE.Clock();
 
-    let camStartPos: Vector3 = new THREE.Vector3(0, 0, 140);
-    let camStartRot: Euler = new THREE.Euler(-0.0, 0.0, 0.0);
+    let camStartPos: Vector3 = new THREE.Vector3(20, 70, 120);
+    let camStartRot: Euler = new THREE.Euler(-0.5, 0.0, 0.0);
 
     const cameraController: CameraController = new CameraController();
 
@@ -35,7 +49,7 @@ async function init(ev: Event): Promise<void> {
     const { boxGeometry, material } = createFlyweights();
 
 
-    const worldSizeRadiusVector: Vector3 = new THREE.Vector3(50, 50, 50);
+    const worldSizeRadiusVector: Vector3 = new THREE.Vector3(80, 40, 80);
 
     // GenerateCubes
     generateCubes();
@@ -52,18 +66,9 @@ async function init(ev: Event): Promise<void> {
 
     function generateCubes(): void {
 
-        // Create an InstancedMesh to hold all cubes
-
         let lowestCorner: Vector3 = worldSizeRadiusVector.clone().multiplyScalar(-1);
         let highestCorner: Vector3 = lowestCorner.clone().add(worldSizeRadiusVector.clone().multiplyScalar(2));
 
-        let matrices: Matrix4[] = [];
-        let colors: number[] = [];
-
-        let numbers: number[] = [];
-        let positions: Vector3[] = [];
-
-        let blockIndex = 0;
 
         for (let xIndex: number = lowestCorner.x; xIndex < highestCorner.x; xIndex++) {
             for (let yIndex: number = lowestCorner.y; yIndex < highestCorner.y; yIndex++) {
@@ -71,27 +76,39 @@ async function init(ev: Event): Promise<void> {
 
                     const currentPos: Vector3 = (new THREE.Vector3(Math.floor(xIndex), Math.floor(yIndex), Math.floor(zIndex))).floor();
 
-                    const pseudoRN = Noise.getNoise(currentPos);
+                    const density = Noise.getDensity(currentPos) + (expectedHeight - currentPos.y) * squashFactor;
 
-                    numbers.push(pseudoRN);
-                    positions.push(currentPos);
+                    if (debugLog) {
+                        numbers.push(density);
+                        positions.push(currentPos);
+                    }
 
-                    if (pseudoRN > 0.0 && pseudoRN < 0.10) {
+                    //let surfaceY: number = density * 50;
+
+                    if (
+                        /*
+                        (density > -1.0 && density < -0.35) ||
+                        (density > -0.05 && density < 0.05) ||
+                        (density > 0.35 && density < 1.0)
+                        */
+                        density > 0
+                        /*true */
+                    ) {
                         const matrix = new THREE.Matrix4();
                         matrix.setPosition(currentPos);
                         matrices.push(matrix);
 
                         const color = new THREE.Color();
-                        color.setHSL(pseudoRN, 0.718, 0.5);
+                        color.setHSL(density, 0.718, 0.5);
                         colors.push(color.r, color.g, color.b);
-
-                        blockIndex++;
                     }
                 }
             }
         }
 
-        //checkDuplicates(numbers, positions);
+        if (debugLog) {
+            checkDuplicates(numbers, positions);
+        }
 
         const instanceCount = matrices.length;
 

@@ -17,18 +17,26 @@ let timeUntilNextAutoResize = autoResizeInterval;
 let timeLastFrame = Date.now();
 let deltaTime = 0;
 let flyControlsSpeed = 100;
+let debugLog = false;
+let matrices = [];
+let colors = [];
+let numbers = [];
+let positions = [];
+const seaLevel = 0;
+const expectedHeight = 0;
+const squashFactor = 0.01;
 function init(ev) {
     return __awaiter(this, void 0, void 0, function* () {
         const THREE = yield loadThreeJs();
         const clock = new THREE.Clock();
-        let camStartPos = new THREE.Vector3(0, 0, 140);
-        let camStartRot = new THREE.Euler(-0.0, 0.0, 0.0);
+        let camStartPos = new THREE.Vector3(20, 70, 120);
+        let camStartRot = new THREE.Euler(-0.5, 0.0, 0.0);
         const cameraController = new CameraController();
         const { scene, renderer, camera } = setupSceneBasics();
         setupLight();
         // Create a shared material (all cubes will use this)
         const { boxGeometry, material } = createFlyweights();
-        const worldSizeRadiusVector = new THREE.Vector3(50, 50, 50);
+        const worldSizeRadiusVector = new THREE.Vector3(80, 40, 80);
         // GenerateCubes
         generateCubes();
         animate();
@@ -36,34 +44,40 @@ function init(ev) {
         // ---------------- FUNCTION DECLERATIONS --------------------
         // -----------------------------------------------------------
         function generateCubes() {
-            // Create an InstancedMesh to hold all cubes
             let lowestCorner = worldSizeRadiusVector.clone().multiplyScalar(-1);
             let highestCorner = lowestCorner.clone().add(worldSizeRadiusVector.clone().multiplyScalar(2));
-            let matrices = [];
-            let colors = [];
-            let numbers = [];
-            let positions = [];
-            let blockIndex = 0;
             for (let xIndex = lowestCorner.x; xIndex < highestCorner.x; xIndex++) {
                 for (let yIndex = lowestCorner.y; yIndex < highestCorner.y; yIndex++) {
                     for (let zIndex = lowestCorner.z; zIndex < highestCorner.z; zIndex++) {
                         const currentPos = (new THREE.Vector3(Math.floor(xIndex), Math.floor(yIndex), Math.floor(zIndex))).floor();
-                        const pseudoRN = Noise.getNoise(currentPos);
-                        numbers.push(pseudoRN);
-                        positions.push(currentPos);
-                        if (pseudoRN > 0.0 && pseudoRN < 0.10) {
+                        const density = Noise.getDensity(currentPos) + (expectedHeight - currentPos.y) * squashFactor;
+                        if (debugLog) {
+                            numbers.push(density);
+                            positions.push(currentPos);
+                        }
+                        //let surfaceY: number = density * 50;
+                        if (
+                        /*
+                        (density > -1.0 && density < -0.35) ||
+                        (density > -0.05 && density < 0.05) ||
+                        (density > 0.35 && density < 1.0)
+                        */
+                        density > 0
+                        /*true */
+                        ) {
                             const matrix = new THREE.Matrix4();
                             matrix.setPosition(currentPos);
                             matrices.push(matrix);
                             const color = new THREE.Color();
-                            color.setHSL(pseudoRN, 0.718, 0.5);
+                            color.setHSL(density, 0.718, 0.5);
                             colors.push(color.r, color.g, color.b);
-                            blockIndex++;
                         }
                     }
                 }
             }
-            //checkDuplicates(numbers, positions);
+            if (debugLog) {
+                checkDuplicates(numbers, positions);
+            }
             const instanceCount = matrices.length;
             console.log("instances: ", instanceCount);
             const instanceMesh = new THREE.InstancedMesh(boxGeometry, material, instanceCount);
